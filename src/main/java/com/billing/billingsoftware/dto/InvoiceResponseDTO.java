@@ -3,65 +3,25 @@ package com.billing.billingsoftware.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/*
- THIS IS INVOICE RESPONSE DTO CLASS.
- THIS DTO IS USED TO SEND COMPLETE INVOICE DETAILS BACK TO CLIENT.
-
- IT CONTAINS:
- 1. INVOICE ID AND DATE
- 2. CUSTOMER DETAILS
- 3. PRODUCT LIST WITH PRICE, TAX AND TOTAL
- 4. TOTAL AMOUNT, TAX, DISCOUNT AND FINAL PAYABLE AMOUNT
-*/
-
 public class InvoiceResponseDTO {
 
-    // STORES AUTO GENERATED INVOICE ID
     private Long invoiceId;
-
-    // STORES DATE AND TIME OF INVOICE GENERATION
     private LocalDateTime invoiceDate;
-
-    // STORES CUSTOMER NAME
     private String customerName;
-
-    // STORES CUSTOMER PHONE NUMBER
     private String customerPhone;
-
-    // STORES LIST OF PRODUCTS INCLUDED IN INVOICE
     private List<Item> items;
 
-    // STORES SUBTOTAL AMOUNT (WITHOUT TAX)
     private double totalAmount;
-
-    // STORES TOTAL GST AMOUNT
     private double totalTax;
-
-    // STORES DISCOUNT VALUE
     private double discount;
-
-    // STORES FINAL PAYABLE AMOUNT AFTER TAX AND DISCOUNT
     private double finalAmount;
 
-    /*
-     INNER ITEM DTO
-     THIS CLASS STORES EACH PRODUCT DETAILS IN INVOICE
-     */
+    
     public static class Item {
-
-        // PRODUCT NAME
         private String productName;
-
-        // PRODUCT QUANTITY
         private int quantity;
-
-        // PRICE WITHOUT TAX
         private double price;
-
-        // TAX AMOUNT FOR THIS PRODUCT
         private double taxAmount;
-
-        // TOTAL PRICE (PRICE + TAX)
         private double total;
 
         public String getProductName() {
@@ -104,8 +64,6 @@ public class InvoiceResponseDTO {
             this.total = total;
         }
     }
-
-    // -------- GETTERS AND SETTERS --------
 
     public Long getInvoiceId() {
         return invoiceId;
