@@ -1,106 +1,96 @@
 package com.billing.billingsoftware.repository;
 
-import com.billing.billingsoftware.entity.*;
+import com.billing.billingsoftware.entity.Product;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
-import java.sql.Timestamp;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class InvoiceRepository {
+public class ProductRepository {
 
     private final JdbcTemplate jdbcTemplate;
 
-
-    public InvoiceRepository(JdbcTemplate jdbcTemplate) {
+    public ProductRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    // SAVE INVOICE + INVOICE ITEMS INTO DATABASE
-    public Invoice save(Invoice invoice) {
+    // INSERT OR UPDATE PRODUCT
+    public Product save(Product product) {
 
-        // INSERT INTO INVOICE TABLE
-        String invoiceSql = "INSERT INTO invoices(invoice_date, customer_id, total_amount, total_tax, discount, final_amount) VALUES (?, ?, ?, ?, ?, ?)";
+        if (product.getId() == null) {
 
-        jdbcTemplate.update(invoiceSql,
-                Timestamp.valueOf(invoice.getInvoiceDate()),
-                invoice.getCustomer().getId(),
-                invoice.getTotalAmount(),
-                invoice.getTotalTax(),
-                invoice.getDiscount(),
-                invoice.getFinalAmount()
-        );
+            String sql = "INSERT INTO products(name, price, gst_percentage, stock_quantity) VALUES (?, ?, ?, ?)";
 
-        // FETCH AUTO GENERATED INVOICE ID
-        Long invoiceId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
-        invoice.setInvoiceId(invoiceId);
+            KeyHolder keyHolder = new GeneratedKeyHolder();
 
-        // INSERT ALL INVOICE ITEMS
-        for (InvoiceItem item : invoice.getItems()) {
-            String itemSql = "INSERT INTO invoice_items(invoice_id, product_id, quantity, price, tax_amount, total) VALUES (?, ?, ?, ?, ?, ?)";
+            jdbcTemplate.update(connection -> {
+                PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+                ps.setString(1, product.getName());
+                ps.setDouble(2, product.getPrice());
+                ps.setDouble(3, product.getGstPercentage());
+                ps.setInt(4, product.getStockQuantity());
+                return ps;
+            }, keyHolder);
 
-            jdbcTemplate.update(itemSql,
-                    invoiceId,
-                    item.getProduct().getId(),
-                    item.getQuantity(),
-                    item.getPrice(),
-                    item.getTaxAmount(),
-                    item.getTotal()
+            product.setId(keyHolder.getKey().longValue());
+
+        } else {
+
+            String sql = "UPDATE products SET name=?, price=?, gst_percentage=?, stock_quantity=? WHERE id=?";
+
+            jdbcTemplate.update(sql,
+                    product.getName(),
+                    product.getPrice(),
+                    product.getGstPercentage(),
+                    product.getStockQuantity(),
+                    product.getId()
             );
         }
 
-        return invoice;
+        return product;
     }
 
-    // FETCH ALL INVOICES
-    public List<Invoice> findAll() {
-        String sql = "SELECT * FROM invoices";
+    // FETCH ALL PRODUCTS
+    public List<Product> findAll() {
+        String sql = "SELECT * FROM products";
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
-            Invoice invoice = new Invoice();
-            invoice.setInvoiceId(rs.getLong("invoice_id"));
-            invoice.setInvoiceDate(rs.getTimestamp("invoice_date").toLocalDateTime());
-            invoice.setTotalAmount(rs.getDouble("total_amount"));
-            invoice.setTotalTax(rs.getDouble("total_tax"));
-            invoice.setDiscount(rs.getDouble("discount"));
-            invoice.setFinalAmount(rs.getDouble("final_amount"));
-            return invoice;
+            Product p = new Product();
+            p.setId(rs.getLong("id"));
+            p.setName(rs.getString("name"));
+            p.setPrice(rs.getDouble("price"));
+            p.setGstPercentage(rs.getDouble("gst_percentage"));
+            p.setStockQuantity(rs.getInt("stock_quantity"));
+            return p;
         });
     }
 
-    // FETCH INVOICE BY ID
-    public Optional<Invoice> findById(Long id) {
-        String sql = "SELECT * FROM invoices WHERE invoice_id=?";
+    // FETCH PRODUCT BY ID
+    public Optional<Product> findById(Long id) {
+        String sql = "SELECT * FROM products WHERE id=?";
 
-        List<Invoice> list = jdbcTemplate.query(sql, new Object[]{id}, (rs, rowNum) -> {
-            Invoice invoice = new Invoice();
-            invoice.setInvoiceId(rs.getLong("invoice_id"));
-            invoice.setInvoiceDate(rs.getTimestamp("invoice_date").toLocalDateTime());
-            invoice.setTotalAmount(rs.getDouble("total_amount"));
-            invoice.setTotalTax(rs.getDouble("total_tax"));
-            invoice.setDiscount(rs.getDouble("discount"));
-            invoice.setFinalAmount(rs.getDouble("final_amount"));
-            return invoice;
+        List<Product> list = jdbcTemplate.query(sql, new Object[]{id}, (rs, rowNum) -> {
+            Product p = new Product();
+            p.setId(rs.getLong("id"));
+            p.setName(rs.getString("name"));
+            p.setPrice(rs.getDouble("price"));
+            p.setGstPercentage(rs.getDouble("gst_percentage"));
+            p.setStockQuantity(rs.getInt("stock_quantity"));
+            return p;
         });
 
         return list.stream().findFirst();
     }
 
-    // FETCH ALL INVOICES BY CUSTOMER ID
-    public List<Invoice> findByCustomerId(Long customerId) {
-        String sql = "SELECT * FROM invoices WHERE customer_id=?";
-
-        return jdbcTemplate.query(sql, new Object[]{customerId}, (rs, rowNum) -> {
-            Invoice invoice = new Invoice();
-            invoice.setInvoiceId(rs.getLong("invoice_id"));
-            invoice.setInvoiceDate(rs.getTimestamp("invoice_date").toLocalDateTime());
-            invoice.setTotalAmount(rs.getDouble("total_amount"));
-            invoice.setTotalTax(rs.getDouble("total_tax"));
-            invoice.setDiscount(rs.getDouble("discount"));
-            invoice.setFinalAmount(rs.getDouble("final_amount"));
-            return invoice;
-        });
+    // DELETE PRODUCT
+    public void deleteById(Long id) {
+        String sql = "DELETE FROM products WHERE id=?";
+        jdbcTemplate.update(sql, id);
     }
 }
